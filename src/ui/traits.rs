@@ -11,19 +11,25 @@ pub trait UiElement: CustomUi + Drawable {}
 pub trait CustomUi {
     fn init(&mut self, parent_size: Vector2f, parent_position: Vector2f);
     fn update(&mut self);
+
+    /// Dispatches a click through this element and its children.
+    ///
+    /// `None` means this element did not consume the click, so dispatch must
+    /// continue with the remaining siblings. `Some` - even when the vector is
+    /// empty - means the click was consumed and no further sibling sees it.
     fn on_click(&self, click_pos: Vector2f) -> Option<Vec<EventFromUi>>;
 
-    fn is_id(&self, id: UiId) -> bool;
+    /// Finds the element carrying `id`, searching this element and every
+    /// descendant. This is the single lookup used to route events to a target.
+    fn find_mut(&mut self, id: UiId) -> Option<&mut dyn UiElement>;
 
-    fn contains_id(&self, _id: UiId) -> bool {
-        false
-    }
+    /// Called on the element resolved by [`CustomUi::find_mut`]. Only widgets that
+    /// own a background texture slot implement this; containers ignore it.
+    fn set_background_texture(&mut self, _texture: FBox<Texture>) {}
 
     fn overwrite_relative(&mut self, _relative_size: Vector2f, _relative_position: Vector2f) {
         println!("overwrite_rel ignored, no implementation provided");
     }
-
-    fn set_background_texture(&mut self, _id: UiId, _texture: FBox<Texture>) {}
 }
 
 //TODO:

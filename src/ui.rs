@@ -1,4 +1,6 @@
 #![allow(unused)]
+use std::collections::VecDeque;
+
 use sfml::{
     cpp::FBox,
     graphics::{Color, Drawable, RenderStates, RenderTarget, RenderTexture, Sprite, Transformable},
@@ -21,7 +23,7 @@ use crate::ui::{event::EventToUi, traits::UiElement, widget::WidgetData};
 pub struct Ui<'a> {
     parent_size: Vector2f,
     children: Vec<Box<dyn UiElement>>,
-    event_queue: Vec<EventFromUi>,
+    event_queue: VecDeque<EventFromUi>,
     widget: WidgetData<'a>,
     render_texture: FBox<RenderTexture>,
 }
@@ -59,11 +61,15 @@ impl<'a> Ui<'a> {
     }
 
     pub fn on_click(&mut self, click_pos: Vector2f) {
-        if self.widget.was_clicked(click_pos) && self.widget.clickable {
-            for child in &self.children {
-                if let Some(child_events) = child.on_click(click_pos) {
-                    self.event_queue.extend(child_events);
-                }
+        if !self.widget.clickable || !self.widget.was_clicked(click_pos) {
+            return;
+        }
+
+        //reverse order so the topmost child (drawn last) consumes the click first
+        for child in self.children.iter().rev() {
+            if let Some(child_events) = child.on_click(click_pos) {
+                self.event_queue.extend(child_events);
+                return;
             }
         }
     }
@@ -72,8 +78,8 @@ impl<'a> Ui<'a> {
         match event {
             EventToUi::SetTexture(ui_id, texture) => {
                 for child in &mut self.children {
-                    if child.is_id(ui_id) || child.contains_id(ui_id) {
-                        child.set_background_texture(ui_id, texture);
+                    if let Some(target) = child.find_mut(ui_id) {
+                        target.set_background_texture(texture);
                         return;
                     }
                 }
@@ -82,14 +88,14 @@ impl<'a> Ui<'a> {
     }
 
     pub fn next_event(&mut self) -> Option<EventFromUi> {
-        self.event_queue.pop()
+        self.event_queue.pop_front()
     }
 }
 
 impl<'a> Default for Ui<'a> {
     fn default() -> Self {
         Self {
-            event_queue: Vec::new(),
+            event_queue: VecDeque::new(),
             parent_size: Vector2f::new(0.0, 0.0),
             render_texture: RenderTexture::new(1, 1).unwrap(),
             widget: WidgetData {

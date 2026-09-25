@@ -46,6 +46,11 @@ impl<'a> Button<'a> {
         self.widget.bg_color = color;
         self
     }
+
+    pub fn set_clickable(mut self, clickable: bool) -> Self {
+        self.widget.clickable = clickable;
+        self
+    }
 }
 
 impl<'a> Default for Button<'a> {
@@ -71,17 +76,20 @@ impl<'a> CustomUi for Button<'a> {
     fn update(&mut self) {}
 
     fn on_click(&self, click_pos: Vector2f) -> Option<Vec<EventFromUi>> {
-        if self.widget.was_clicked(click_pos) {
+        if self.widget.clickable && self.widget.was_clicked(click_pos) {
             return Some(vec![EventFromUi::ButtonClicked(self.widget.id)]);
         }
         None
     }
 
-    fn is_id(&self, id: UiId) -> bool {
-        id == self.widget.id
+    fn find_mut(&mut self, id: UiId) -> Option<&mut dyn UiElement> {
+        if self.widget.id == id {
+            return Some(self);
+        }
+        None
     }
 
-    fn set_background_texture(&mut self, _id: UiId, texture: FBox<Texture>) {
+    fn set_background_texture(&mut self, texture: FBox<Texture>) {
         self.texture = Some(texture);
     }
 
