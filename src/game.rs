@@ -20,10 +20,14 @@ use crate::ui::{
 pub mod constant;
 use constant::*;
 
+pub mod world;
+use world::*;
+
 pub struct Game<'a> {
     window: FBox<RenderWindow>,
     ui: Ui<'a>,
     ui_mappings: UiMappings,
+    world: World,
     // ui_state: UiState,
 }
 
@@ -58,7 +62,7 @@ impl<'a> Game<'a> {
         window.set_position(Vector2i::new(270, 190));
 
         let exit_button_id = UiId::new();
-        let exit_button = Button::new(Vector2f::new(0.1, 0.1), Vector2f::new(0.0, 0.0), exit_button_id)
+        let exit_button = Button::new(Vector2f::new(0.07, 0.06), Vector2f::new(0.0, 0.0), exit_button_id)
             .set_bg_color(Color::rgb(100, 100, 100));
 
         let mut spell_component_grid_mappings = HashSet::new();
@@ -72,7 +76,7 @@ impl<'a> Game<'a> {
         }
 
         let spell_textbox_id = UiId::new();
-        let spell_textbox = TextBox::new(Vector2f::new(0.5, 0.08), Vector2f::new(0.25, 0.9), spell_textbox_id)
+        let spell_textbox = TextBox::new(Vector2f::new(0.46, 0.08), Vector2f::new(0.27, 0.9), spell_textbox_id)
             .set_bg_color(Color::rgb(30, 30, 60))
             .set_text_color(Color::WHITE)
             .set_character_size(28);
@@ -92,6 +96,7 @@ impl<'a> Game<'a> {
                 exit_button: exit_button_id,
                 spell_textbox: spell_textbox_id,
             },
+            world: World::new(),
         }
     }
 
@@ -112,13 +117,15 @@ impl<'a> Game<'a> {
                 Event::Closed => self.window.close(),
                 Event::KeyPressed { code, .. } => match code {
                     Key::Escape => self.window.close(),
-                    key => if let Some(key) = self.ui.on_key_pressed(key){
-                        //process keystroke if not consumed by ui
-                        match key {
-                            Key::S => self.ui.move_focus_to(Some(self.ui_mappings.spell_textbox)),
-                            _ => {}
+                    key => {
+                        if let Some(key) = self.ui.on_key_pressed(key) {
+                            //process keystroke if not consumed by ui
+                            match key {
+                                Key::T => self.ui.move_focus_to(Some(self.ui_mappings.spell_textbox)),
+                                _ => {}
+                            }
                         }
-                    },
+                    }
                 },
                 Event::MouseButtonPressed { button, x, y } => match button {
                     mouse::Button::Left => self.ui.on_click(Vector2f::new(x as f32, y as f32)),
@@ -134,6 +141,7 @@ impl<'a> Game<'a> {
             self.process_ui_event(&event);
         }
         self.ui.update();
+        self.world.update();
     }
 
     fn process_ui_event(&mut self, event: &EventFromUi) {
@@ -156,6 +164,7 @@ impl<'a> Game<'a> {
 
     fn draw(&mut self) {
         self.window.clear(Color::rgb(2, 9, 46));
+        self.window.draw(&self.world);
         self.window.draw(&self.ui);
         self.window.display();
     }

@@ -82,7 +82,7 @@ impl<'a> Ui<'a> {
     pub fn on_key_pressed(&mut self, key: Key) -> Option<Key> {
         if let Some(events) = self.focused_mut().and_then(|el| el.on_key_pressed(key)) {
             self.event_queue.extend(events);
-            return None
+            return None;
         }
         Some(key)
     }
