@@ -109,7 +109,9 @@ impl<'a> Game<'a> {
         }
     }
 
-    fn init(&mut self) {}
+    fn init(&mut self) {
+        self.world.init();
+    }
 
     pub fn process_input(&mut self) {
         while let Some(event) = self.window.poll_event() {
@@ -156,7 +158,7 @@ impl<'a> Game<'a> {
             }
             EventFromUi::TextSubmitted(textbox_id, text) => {
                 if *textbox_id == self.ui_mappings.spell_textbox {
-                    println!("spell submitted: {text:?}");
+                    self.world.get_spell_text(text);
                 }
             }
         }

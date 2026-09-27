@@ -1,25 +1,43 @@
+use hecs::Entity;
 use sfml::{
     cpp::FBox,
     graphics::{
         Color, Drawable, RectangleShape, RenderStates, RenderTarget, RenderTexture, Shape, Sprite, Transformable,
     },
     system::{Vector2f, Vector2i},
-    window::Key,
 };
 
-use crate::game::constant;
+use crate::game::{constant, world::components::*};
+
+pub mod components;
+pub mod spell_parser;
 
 /// Grid line thickness in pixels.
 const GRID_LINE_THICKNESS: f32 = 1.0;
 pub struct World {
+    ecs: hecs::World,
     render_texture: FBox<RenderTexture>,
+    entity_mappings: EntityMappings,
+}
+
+struct EntityMappings {
+    player: Entity,
 }
 
 impl World {
     pub fn new() -> Self {
         World {
+            ecs: hecs::World::new(),
             render_texture: RenderTexture::new(constant::SCREEN_W, constant::SCREEN_H).unwrap(),
+            entity_mappings: EntityMappings {
+                player: Entity::DANGLING,
+            },
         }
+    }
+
+    pub fn init(&mut self) {
+        let player = self.ecs.spawn((Player, Age(10)));
+        self.entity_mappings.player = player;
     }
 
     pub fn update(&mut self) {
@@ -54,6 +72,11 @@ impl World {
             row.set_position(Vector2f::new(0.0, row_index as f32 * cell_height));
             target.draw(&row);
         }
+    }
+
+    pub fn get_spell_text(&self, spell_text: &String) {
+        // spell_parser::parse_spell(spell_text);
+        // println!("spell submitted in world: {spell_text:?}");
     }
 }
 
