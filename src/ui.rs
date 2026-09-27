@@ -5,25 +5,27 @@ use sfml::{
     cpp::FBox,
     graphics::{Color, Drawable, RenderStates, RenderTarget, RenderTexture, Sprite, Transformable},
     system::Vector2f,
+    window::Key,
 };
 
 pub mod event;
 pub mod padding;
+pub mod style;
 pub mod traits;
 pub mod ui_id;
-pub mod style;
 pub mod widget;
 #[macro_use]
 pub mod macros;
 pub mod widgets;
 pub use event::EventFromUi;
 
-use crate::ui::{event::EventToUi, traits::UiElement, widget::WidgetData};
+use crate::ui::{event::EventToUi, traits::UiElement, ui_id::UiId, widget::WidgetData};
 
 pub struct Ui<'a> {
     parent_size: Vector2f,
     children: Vec<Box<dyn UiElement>>,
     event_queue: VecDeque<EventFromUi>,
+    focused: Option<UiId>,
     widget: WidgetData<'a>,
     render_texture: FBox<RenderTexture>,
 }
@@ -65,6 +67,8 @@ impl<'a> Ui<'a> {
             return;
         }
 
+        self.move_focus_to(self.children.iter().rev().find_map(|c| c.focusable_at(click_pos)));
+
         //reverse order so the topmost child (drawn last) consumes the click first
         for child in self.children.iter().rev() {
             if let Some(child_events) = child.on_click(click_pos) {
@@ -72,6 +76,38 @@ impl<'a> Ui<'a> {
                 return;
             }
         }
+    }
+
+    /// Routes a key press to the focused element, if there is one.
+    pub fn on_key_pressed(&mut self, key: Key) {
+        if let Some(events) = self.focused_mut().and_then(|el| el.on_key_pressed(key)) {
+            self.event_queue.extend(events);
+        }
+    }
+
+    /// Focuses the element with `new_focus`, or clears focus when it is `None`.
+    /// Clicking a non-focusable widget therefore blurs whatever had focus.
+    fn move_focus_to(&mut self, new_focus: Option<UiId>) {
+        if new_focus == self.focused {
+            return;
+        }
+        if let Some(el) = self.focused_mut() {
+            el.set_focused(false);
+        }
+        self.focused = new_focus;
+        if let Some(el) = self.focused_mut() {
+            el.set_focused(true);
+        }
+    }
+
+    fn focused_mut(&mut self) -> Option<&mut dyn UiElement> {
+        let id = self.focused?;
+        for child in &mut self.children {
+            if let Some(found) = child.find_mut(id) {
+                return Some(found);
+            }
+        }
+        None
     }
 
     pub fn process_incoming_event(&mut self, event: EventToUi) {
@@ -96,6 +132,7 @@ impl<'a> Default for Ui<'a> {
     fn default() -> Self {
         Self {
             event_queue: VecDeque::new(),
+            focused: None,
             parent_size: Vector2f::new(0.0, 0.0),
             render_texture: RenderTexture::new(1, 1).unwrap(),
             widget: WidgetData {

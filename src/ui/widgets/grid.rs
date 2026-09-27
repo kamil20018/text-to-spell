@@ -121,6 +121,13 @@ impl<'a> CustomUi for Grid<'a> {
         None
     }
 
+    fn focusable_at(&self, pos: Vector2f) -> Option<UiId> {
+        if !self.widget.clickable || !self.widget.was_clicked(pos) {
+            return None;
+        }
+        self.children.iter().rev().find_map(|child| child.focusable_at(pos))
+    }
+
     fn find_mut(&mut self, id: UiId) -> Option<&mut dyn UiElement> {
         if self.widget.id == id {
             return Some(self);

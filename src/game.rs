@@ -1,4 +1,4 @@
-use std::collections::{HashSet};
+use std::collections::HashSet;
 
 use sfml::{
     cpp::FBox,
@@ -7,16 +7,14 @@ use sfml::{
     window::{self, ContextSettings, Event, Key, VideoMode, mouse},
 };
 
-use crate::{boxed_vec};
-use crate::{
-    ui::{
-        // macros,
-        Ui,
-        event::{EventFromUi},
-        traits::UiElement,
-        ui_id::UiId,
-        widgets::{Button},
-    },
+use crate::boxed_vec;
+use crate::ui::{
+    // macros,
+    Ui,
+    event::EventFromUi,
+    traits::UiElement,
+    ui_id::UiId,
+    widgets::{Button, TextBox},
 };
 
 pub mod constant;
@@ -31,12 +29,13 @@ pub struct Game<'a> {
 
 pub struct UiMappings {
     exit_button: UiId,
+    spell_textbox: UiId,
 }
 
 impl UiMappings {
     fn button_press(&self, id: UiId) -> Option<UiAction> {
         if id == self.exit_button {
-            return Some(UiAction::ExitGame)
+            return Some(UiAction::ExitGame);
         }
         None
     }
@@ -62,7 +61,6 @@ impl<'a> Game<'a> {
         let exit_button = Button::new(Vector2f::new(0.1, 0.1), Vector2f::new(0.0, 0.0), exit_button_id)
             .set_bg_color(Color::rgb(100, 100, 100));
 
-
         let mut spell_component_grid_mappings = HashSet::new();
         let mut grid_buttons: Vec<Box<dyn UiElement>> = Vec::new();
         for _row in 0..11 {
@@ -73,6 +71,12 @@ impl<'a> Game<'a> {
             }
         }
 
+        let spell_textbox_id = UiId::new();
+        let spell_textbox = TextBox::new(Vector2f::new(0.55, 0.08), Vector2f::new(0.12, 0.02), spell_textbox_id)
+            .set_bg_color(Color::rgb(30, 30, 60))
+            .set_text_color(Color::WHITE)
+            .set_character_size(28);
+
         Game {
             window: window,
             ui: Ui::new(
@@ -80,10 +84,13 @@ impl<'a> Game<'a> {
                 boxed_vec![
                     // exit button
                     exit_button,
+                    // spell textbox
+                    spell_textbox,
                 ],
             ),
             ui_mappings: UiMappings {
                 exit_button: exit_button_id,
+                spell_textbox: spell_textbox_id,
             },
         }
     }
@@ -97,8 +104,7 @@ impl<'a> Game<'a> {
         }
     }
 
-    fn init(&mut self) {
-    }
+    fn init(&mut self) {}
 
     pub fn process_input(&mut self) {
         while let Some(event) = self.window.poll_event() {
@@ -106,9 +112,9 @@ impl<'a> Game<'a> {
                 Event::Closed => self.window.close(),
                 Event::KeyPressed { code, .. } => match code {
                     Key::Escape => self.window.close(),
-                    _ => {}
+                    key => self.ui.on_key_pressed(key),
                 },
-                                Event::MouseButtonPressed { button, x, y } => match button {
+                Event::MouseButtonPressed { button, x, y } => match button {
                     mouse::Button::Left => self.ui.on_click(Vector2f::new(x as f32, y as f32)),
                     _ => {}
                 },
@@ -132,6 +138,11 @@ impl<'a> Game<'a> {
                         UiAction::ExitGame => self.window.close(),
                         // _ => {}
                     }
+                }
+            }
+            EventFromUi::TextSubmitted(textbox_id, text) => {
+                if *textbox_id == self.ui_mappings.spell_textbox {
+                    println!("spell submitted: {text:?}");
                 }
             }
         }

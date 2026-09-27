@@ -4,6 +4,7 @@ use crate::ui::ui_id::UiId;
 
 pub enum EventFromUi {
     ButtonClicked(UiId),
+    TextSubmitted(UiId, String),
 }
 
 #[derive(Debug)]

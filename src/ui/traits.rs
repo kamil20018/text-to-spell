@@ -2,6 +2,7 @@ use sfml::{
     cpp::FBox,
     graphics::{Drawable, Texture},
     system::Vector2f,
+    window::Key,
 };
 
 use crate::ui::{event::EventFromUi, ui_id::UiId};
@@ -18,6 +19,21 @@ pub trait CustomUi {
     /// continue with the remaining siblings. `Some` - even when the vector is
     /// empty - means the click was consumed and no further sibling sees it.
     fn on_click(&self, click_pos: Vector2f) -> Option<Vec<EventFromUi>>;
+
+    /// Delivers a key press to the focused element. `None` means the key was not
+    /// consumed, leaving it free for the game to handle instead.
+    fn on_key_pressed(&mut self, _key: Key) -> Option<Vec<EventFromUi>> {
+        None
+    }
+
+    /// Returns the id of the topmost focusable element under `pos`, searching
+    /// this element and its descendants. Containers recurse; leaves decide.
+    fn focusable_at(&self, _pos: Vector2f) -> Option<UiId> {
+        None
+    }
+
+    /// Grants or revokes keyboard focus. Revoking must not emit events.
+    fn set_focused(&mut self, _focused: bool) {}
 
     /// Finds the element carrying `id`, searching this element and every
     /// descendant. This is the single lookup used to route events to a target.
