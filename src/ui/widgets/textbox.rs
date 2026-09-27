@@ -121,7 +121,11 @@ impl<'a> CustomUi for TextBox<'a> {
 
     fn on_key_pressed(&mut self, key: Key) -> Option<Vec<EventFromUi>> {
         match key {
-            Key::Enter => Some(vec![EventFromUi::TextSubmitted(self.widget.id, self.text.clone())]),
+            Key::Enter => {
+                let submitted = EventFromUi::TextSubmitted(self.widget.id, std::mem::take(&mut self.text));
+                self.cursor = 0;
+                Some(vec![submitted])
+            }
             Key::Backspace => {
                 if self.cursor > 0 {
                     self.cursor -= 1;

@@ -72,7 +72,7 @@ impl<'a> Game<'a> {
         }
 
         let spell_textbox_id = UiId::new();
-        let spell_textbox = TextBox::new(Vector2f::new(0.55, 0.08), Vector2f::new(0.12, 0.02), spell_textbox_id)
+        let spell_textbox = TextBox::new(Vector2f::new(0.5, 0.08), Vector2f::new(0.25, 0.9), spell_textbox_id)
             .set_bg_color(Color::rgb(30, 30, 60))
             .set_text_color(Color::WHITE)
             .set_character_size(28);
@@ -112,7 +112,13 @@ impl<'a> Game<'a> {
                 Event::Closed => self.window.close(),
                 Event::KeyPressed { code, .. } => match code {
                     Key::Escape => self.window.close(),
-                    key => self.ui.on_key_pressed(key),
+                    key => if let Some(key) = self.ui.on_key_pressed(key){
+                        //process keystroke if not consumed by ui
+                        match key {
+                            Key::S => self.ui.move_focus_to(Some(self.ui_mappings.spell_textbox)),
+                            _ => {}
+                        }
+                    },
                 },
                 Event::MouseButtonPressed { button, x, y } => match button {
                     mouse::Button::Left => self.ui.on_click(Vector2f::new(x as f32, y as f32)),

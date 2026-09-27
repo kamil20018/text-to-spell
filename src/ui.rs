@@ -79,15 +79,17 @@ impl<'a> Ui<'a> {
     }
 
     /// Routes a key press to the focused element, if there is one.
-    pub fn on_key_pressed(&mut self, key: Key) {
+    pub fn on_key_pressed(&mut self, key: Key) -> Option<Key> {
         if let Some(events) = self.focused_mut().and_then(|el| el.on_key_pressed(key)) {
             self.event_queue.extend(events);
+            return None
         }
+        Some(key)
     }
 
     /// Focuses the element with `new_focus`, or clears focus when it is `None`.
     /// Clicking a non-focusable widget therefore blurs whatever had focus.
-    fn move_focus_to(&mut self, new_focus: Option<UiId>) {
+    pub fn move_focus_to(&mut self, new_focus: Option<UiId>) {
         if new_focus == self.focused {
             return;
         }
