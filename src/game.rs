@@ -124,7 +124,7 @@ impl<'a> Game<'a> {
                             //process keystroke if not consumed by ui
                             match key {
                                 Key::T => self.ui.move_focus_to(Some(self.ui_mappings.spell_textbox)),
-                                _ => {}
+                                _ => self.world.process_keystroke(key),
                             }
                         }
                     }

@@ -1,5 +1,4 @@
-use std::str::FromStr;
-use std::result::Result;
+use std::{result::Result, str::FromStr};
 
 #[derive(Debug)]
 enum Token {
@@ -15,7 +14,6 @@ enum Token {
     S,
     W,
     E,
-
     // Up,
     // Down,
 }
@@ -67,15 +65,9 @@ pub fn parse_spell(spell_text: &String) {
     while !tokens.is_empty() {
         let token = tokens.remove(0);
         match token {
-            Token::Conjure => {
-
-            },
-            Token::Heat => {
-
-            },
-            Token::Move => {
-
-            },
+            Token::Conjure => {}
+            Token::Heat => {}
+            Token::Move => {}
             _ => {
                 println!("bad spell");
                 return;
