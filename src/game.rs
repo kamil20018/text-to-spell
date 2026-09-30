@@ -158,7 +158,7 @@ impl<'a> Game<'a> {
             }
             EventFromUi::TextSubmitted(textbox_id, text) => {
                 if *textbox_id == self.ui_mappings.spell_textbox {
-                    self.world.get_spell_text(text);
+                    self.world.cast_spell(text);
                 }
             }
         }

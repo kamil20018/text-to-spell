@@ -1,13 +1,14 @@
 use std::{result::Result, str::FromStr};
 
 #[derive(Debug)]
-enum Token {
+pub enum Token {
     Conjure,
     Move,
     Heat,
 
     Rock,
     Lava,
+    Player,
     // Water,
     // Steam,
     N,
@@ -17,6 +18,8 @@ enum Token {
     // Up,
     // Down,
 }
+
+
 
 impl FromStr for Token {
     type Err = ();
@@ -29,6 +32,7 @@ impl FromStr for Token {
 
             "rock" => Ok(Token::Rock),
             "lava" => Ok(Token::Lava),
+            "player" => Ok(Token::Player),
             // "water" => Ok(Token::Water),
             // "steam" => Ok(Token::Steam),
             "n" => Ok(Token::N),
@@ -48,30 +52,18 @@ impl Token {
     }
 }
 
-fn tokenize(spell_text: &String) -> Vec<Token> {
-    let mut tokens: Vec<Token> = Vec::new();
-    for word in spell_text.split_whitespace() {
-        // println!("{:?}", Token::from_str(word));
-        if let Ok(token) = Token::from_str(word) {
-            tokens.push(token);
-        }
-    }
-    tokens
-}
+pub fn parse_spell(spell_text: &String) -> Vec<Vec<Token>> {
+    let mut tokens: Vec<Vec<Token>> = Vec::new();
 
-pub fn parse_spell(spell_text: &String) {
-    let mut tokens = tokenize(spell_text);
-
-    while !tokens.is_empty() {
-        let token = tokens.remove(0);
-        match token {
-            Token::Conjure => {}
-            Token::Heat => {}
-            Token::Move => {}
-            _ => {
-                println!("bad spell");
-                return;
+    for sentence in spell_text.split(",") {
+        let mut sentence_vec: Vec<Token> = Vec::new();
+        for word in sentence.split_whitespace() {
+            if let Ok(token) = Token::from_str(word) {
+                sentence_vec.push(token);
             }
         }
+        tokens.push(sentence_vec);
     }
+
+    tokens
 }

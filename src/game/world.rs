@@ -13,6 +13,7 @@ use crate::game::{constant, world::components::*};
 pub mod components;
 pub mod spell_parser;
 pub mod texture_atlas;
+use spell_parser::Token;
 use texture_atlas::*;
 
 /// Grid line thickness in pixels.
@@ -144,9 +145,56 @@ impl World {
         }
     }
 
-    pub fn get_spell_text(&self, spell_text: &String) {
-        // spell_parser::parse_spell(spell_text);
-        // println!("spell submitted in world: {spell_text:?}");
+    pub fn cast_spell(&mut self, spell_text: &String) {
+        let mut sentences: Vec<Vec<Token>> = spell_parser::parse_spell(spell_text);
+
+        println!("{:?}", sentences);
+        for sentence in &mut sentences {
+            while !sentence.is_empty() {
+                let token = sentence.remove(0);
+                match token {
+                    Token::Conjure => {
+                        let conjure_type = sentence.remove(0);
+                        let conjure_location = sentence.remove(0);
+
+                        let dir = match conjure_location {
+                            Token::N => Vector2i::new(0, -1),
+                            Token::S => Vector2i::new(0, 1),
+                            Token::W => Vector2i::new(-1, 0),
+                            Token::E => Vector2i::new(1,0 ),
+                            _ => Vector2i::new(0,0 ),
+                        };
+                        match conjure_type {
+                            Token::Rock => {
+                                let _ = self.ecs.spawn((
+                                    Rock,
+                                    TextureString("stone".to_string()),
+                                    TilePosition(self.get_player_tile_pos()+ dir),
+                                ));
+                            }
+                            _ => {}
+                        }
+                    }
+                    Token::Heat => {
+                        println!("heat");
+                    }
+                    Token::Move => {
+                        println!("move");
+                    }
+                    _ => {
+                        println!("bad spell");
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn get_player_tile_pos(&self) -> Vector2i {
+        for (_, tile_position) in self.ecs.query::<(&Player, &mut TilePosition)>().into_iter() {
+            return tile_position.0;
+        }
+        return Vector2i::new(-1, -1);
     }
 }
 
