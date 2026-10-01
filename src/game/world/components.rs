@@ -2,6 +2,7 @@
 use sfml::system::Vector2i;
 pub struct Player;
 pub struct Rock;
+pub struct Lava;
 pub struct Name(pub String);
 pub struct Age(pub i32);
 pub struct TextureString(pub String);

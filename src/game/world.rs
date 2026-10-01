@@ -8,10 +8,7 @@ use sfml::{
     window::Key,
 };
 
-use crate::game::{
-    constant,
-    world::{components::*, spell_parser::Object::Lava},
-};
+use crate::game::{constant, world::spell_parser::Object::Lava};
 
 pub mod components;
 pub mod spell_parser;
@@ -50,26 +47,26 @@ impl World {
     pub fn init(&mut self) {
         self.texture_atlas.init();
         let player = self.ecs.spawn((
-            Player,
-            TextureString("player".to_string()),
-            TilePosition(Vector2i::new(5, 7)),
+            components::Player,
+            components::TextureString("player".to_string()),
+            components::TilePosition(Vector2i::new(5, 7)),
         ));
         self.entity_mappings.player = player;
 
         self.ecs.spawn((
-            Rock,
-            TextureString("stone".to_string()),
-            TilePosition(Vector2i::new(10, 7)),
+            components::Rock,
+            components::TextureString("stone".to_string()),
+            components::TilePosition(Vector2i::new(10, 7)),
         ));
         self.ecs.spawn((
-            Rock,
-            TextureString("stone".to_string()),
-            TilePosition(Vector2i::new(7, 2)),
+            components::Rock,
+            components::TextureString("stone".to_string()),
+            components::TilePosition(Vector2i::new(7, 2)),
         ));
         self.ecs.spawn((
-            Rock,
-            TextureString("stone".to_string()),
-            TilePosition(Vector2i::new(3, 3)),
+            components::Rock,
+            components::TextureString("stone".to_string()),
+            components::TilePosition(Vector2i::new(3, 3)),
         ));
     }
 
@@ -92,7 +89,11 @@ impl World {
     }
 
     pub fn move_player(&mut self, distance: Vector2i) {
-        for (_, tile_position) in self.ecs.query_mut::<(&Player, &mut TilePosition)>().into_iter() {
+        for (_, tile_position) in self
+            .ecs
+            .query_mut::<(&components::Player, &mut components::TilePosition)>()
+            .into_iter()
+        {
             tile_position.0 += distance;
         }
     }
@@ -109,7 +110,11 @@ impl World {
     }
 
     fn draw_textures(&mut self) {
-        for (tile_pos, texture_string) in self.ecs.query::<(&TilePosition, &TextureString)>().iter() {
+        for (tile_pos, texture_string) in self
+            .ecs
+            .query::<(&components::TilePosition, &components::TextureString)>()
+            .iter()
+        {
             let texture = self.texture_atlas.get(&texture_string.0).unwrap();
             let size = texture.size();
             let mut sprite = Sprite::with_texture(texture);
@@ -172,6 +177,11 @@ impl World {
 
         match action {
             Action::Conjure => {
+                if verse.len() < 2 {
+                    println!("missing tokens in conjure");
+                    return None;
+                }
+
                 let conjure_type = verse.remove(0);
                 let conjure_location = verse.remove(0);
 
@@ -197,6 +207,11 @@ impl World {
                 return None;
             }
             Action::Heat => {
+                if verse.len() < 1 {
+                    println!("missing tokens in heat");
+                    return None;
+                }
+
                 if verse.remove(0) == Token::GetFromPrev {
                     if let Some((entity, Token::Object(object))) = passed_object {
                         return self.heat_object(entity, &object);
@@ -206,17 +221,50 @@ impl World {
                 return None;
             }
             Action::Move => {
-                if let Token::GetFromPrev = verse.remove(0) {
-                    let dir = verse.remove(0);
+                if verse.len() < 1 {
+                    println!("move: missing tokens");
+                    return None;
+                }
 
-                    if let Token::Dir(dir) = dir {
-                        if let Some((entity, object)) = passed_object {
-                            self.move_entity(&entity, self.get_vec_from_dir(dir));
-                            return Some((entity, object))
-                        }
-                        
+                let move_target = verse.remove(0);
+                let dir = verse.remove(0);
+
+                if verse.len() > 0 {
+                    println!("move: too many tokens");
+                    return None;
+                }
+
+                let mut entity_to_move: Option<Entity> = None;
+                let mut return_object: Option<Token> = None;
+
+                if let Token::GetFromPrev = move_target {
+                    if let Some((entity, object)) = passed_object {
+                        entity_to_move = Some(entity);
+                        return_object = Some(object);
+                    } else {
+                        println!("move: missing passed_object");
+                    }
+                } else if let Token::Object(object) = move_target {
+                    if let Some(entity) = object.get_only_instance(&self.ecs) {
+                        entity_to_move = Some(entity);
+                        return_object = Some(Token::Object(object));
+                    } else {
+                        println!("move: there are less or more than 0 instances in the world")
+                    }
+                } else {
+                    println!("move: wrong move target");
+                }
+
+                if let Token::Dir(dir) = dir {
+                    if let Some(entity) = entity_to_move
+                        && let Some(object) = return_object
+                    {
+                        self.move_entity(&entity, self.get_vec_from_dir(dir));
+                        return Some((entity, object));
                     }
                 }
+
+                println!("move: wrong directional token");
                 return None;
             }
         }
@@ -233,18 +281,22 @@ impl World {
 
     pub fn spawn_object(&mut self, object: &Object, tile_position: Vector2i) -> Entity {
         match object {
-            Object::Rock => self
-                .ecs
-                .spawn((Rock, TextureString("stone".to_string()), TilePosition(tile_position))),
-            Object::Lava => self
-                .ecs
-                .spawn((Lava, TextureString("lava".to_string()), TilePosition(tile_position))),
+            Object::Rock => self.ecs.spawn((
+                components::Rock,
+                components::TextureString("stone".to_string()),
+                components::TilePosition(tile_position),
+            )),
+            Object::Lava => self.ecs.spawn((
+                components::Lava,
+                components::TextureString("lava".to_string()),
+                components::TilePosition(tile_position),
+            )),
             _ => Entity::DANGLING,
         }
     }
 
     pub fn heat_object(&mut self, entity: Entity, object: &Object) -> Option<(Entity, Token)> {
-        let tile_position = *self.ecs.get::<&TilePosition>(entity).unwrap();
+        let tile_position = *self.ecs.get::<&components::TilePosition>(entity).unwrap();
         self.ecs.despawn(entity).unwrap();
         let object = object.on_heat();
         let entity = self.spawn_object(&object.on_heat(), tile_position.0);
@@ -252,11 +304,15 @@ impl World {
     }
 
     pub fn move_entity(&mut self, entity: &Entity, vec: Vector2i) {
-        self.ecs.get::<&mut TilePosition>(*entity).unwrap().0 += vec;
+        self.ecs.get::<&mut components::TilePosition>(*entity).unwrap().0 += vec;
     }
 
     pub fn get_player_tile_pos(&self) -> Vector2i {
-        for (_, tile_position) in self.ecs.query::<(&Player, &mut TilePosition)>().into_iter() {
+        for (_, tile_position) in self
+            .ecs
+            .query::<(&components::Player, &mut components::TilePosition)>()
+            .into_iter()
+        {
             return tile_position.0;
         }
         return Vector2i::new(-1, -1);
