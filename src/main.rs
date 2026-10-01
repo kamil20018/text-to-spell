@@ -1,8 +1,11 @@
-mod game;
+mod app;
+mod state_manager;
+mod states;
 mod ui;
-use game::Game;
+
+use app::App;
 
 fn main() {
-    let mut game = Game::new();
-    game.run();
+    let mut app = App::new();
+    app.run();
 }

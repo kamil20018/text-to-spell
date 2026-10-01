@@ -2,7 +2,7 @@ use std::{result::Result, str::FromStr};
 
 use hecs::{Entity, World};
 
-use crate::game::world::components;
+use crate::states::game::world::components;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {

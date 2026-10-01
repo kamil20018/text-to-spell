@@ -8,7 +8,7 @@ use sfml::{
     window::Key,
 };
 
-use crate::game::constant;
+use crate::states::game::constant;
 
 pub mod components;
 pub mod spell_parser;
