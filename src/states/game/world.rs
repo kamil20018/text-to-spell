@@ -11,6 +11,7 @@ use sfml::{
 use crate::states::game::constant;
 
 pub mod components;
+pub mod serialization;
 pub mod spell_parser;
 pub mod texture_atlas;
 use spell_parser::*;

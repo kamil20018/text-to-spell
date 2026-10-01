@@ -78,19 +78,7 @@ impl Game {
                 if *button_id == self.ui_mappings.exit_button {
                     self.transition = Some(Transition::Quit);
                 } else if *button_id == self.ui_mappings.save_button {
-                    let mut context = SaveContext;
-
-                    let mut output = Vec::new();
-
-                    let mut serializer = serde_json::Serializer::new(&mut output);
-
-                    hecs::serialize::row::serialize(
-                        &self.world.ecs,
-                        &mut context,
-                        &mut serializer,
-                    ).unwrap();
-
-                    let json = String::from_utf8(output).unwrap();
+                    let json = world::serialization::world_to_json(&self.world);
                     println!("{json}");
                 }
             }
@@ -154,72 +142,5 @@ impl GameState for Game {
 
     fn transition(&mut self) -> Option<Transition> {
         self.transition.take()
-    }
-}
-
-use hecs::serialize::row::{self, SerializeContext, try_serialize};
-use hecs::EntityRef;
-use serde::ser::SerializeMap;
-
-struct SaveContext;
-
-#[derive(Debug, Serialize, Deserialize)]
-enum ComponentId {
-    Player,
-    Portal,
-    Rock,
-    Lava,
-    TextureString,
-    TilePosition,
-}
-
-use serde::{Deserialize, Serialize};
-
-impl SerializeContext for SaveContext {
-    fn serialize_entity<S>(
-        &mut self,
-        entity: EntityRef<'_>,
-        mut map: S,
-    ) -> Result<S::Ok, S::Error>
-    where
-        S: SerializeMap,
-    {
-        
-        try_serialize::<components::Player, _, _>(
-            &entity,
-            &ComponentId::Player,
-            &mut map,
-        )?;
-        
-        try_serialize::<components::Portal, _, _>(
-            &entity,
-            &ComponentId::Portal,
-            &mut map,
-        )?;
-        
-        try_serialize::<components::Rock, _, _>(
-            &entity,
-            &ComponentId::Rock,
-            &mut map,
-        )?;
-
-        try_serialize::<components::Lava, _, _>(
-            &entity,
-            &ComponentId::Lava,
-            &mut map,
-        )?;
-        
-        try_serialize::<components::TilePosition, _, _>(
-            &entity,
-            &ComponentId::TilePosition,
-            &mut map,
-        )?;
-
-        try_serialize::<components::TextureString, _, _>(
-            &entity,
-            &ComponentId::TextureString,
-            &mut map,
-        )?;
-        map.end()
     }
 }

@@ -1,8 +1,8 @@
 #![allow(unused)]
 use std::any::type_name;
 
-use serde::{Deserialize, Serialize};
 use hecs::World;
+use serde::{Deserialize, Serialize};
 use sfml::system::Vector2i;
 
 pub fn spawn_object<T>(world: &mut hecs::World, component: T, position: Vector2i) -> hecs::Entity
@@ -13,7 +13,6 @@ where
 
     world.spawn((component, TextureString(texture_name), TilePosition(position)))
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Player;
