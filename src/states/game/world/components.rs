@@ -1,6 +1,7 @@
 #![allow(unused)]
 use std::any::type_name;
 
+use serde::{Deserialize, Serialize};
 use hecs::World;
 use sfml::system::Vector2i;
 
@@ -13,12 +14,16 @@ where
     world.spawn((component, TextureString(texture_name), TilePosition(position)))
 }
 
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Player;
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Portal;
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Rock;
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Lava;
-pub struct Name(pub String);
-pub struct Age(pub i32);
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TextureString(pub String);
-#[derive(Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct TilePosition(pub Vector2i);

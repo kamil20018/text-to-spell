@@ -22,7 +22,7 @@ const CELL_WIDTH: f32 = 60.0;
 const CELL_HEIGHT: f32 = 60.0;
 
 pub struct World {
-    ecs: hecs::World,
+    pub ecs: hecs::World,
     texture_atlas: TextureAtlas,
     render_texture: FBox<RenderTexture>,
     entity_mappings: EntityMappings,
