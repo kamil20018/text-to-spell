@@ -14,12 +14,10 @@ impl TextureAtlas {
     }
 
     pub fn init(&mut self) {
-        let texture = Texture::from_file("resources/textures/lava.png").expect("Failed to load texture");
-        self.textures.insert("lava".to_string(), texture);
-        let texture = Texture::from_file("resources/textures/stone.png").expect("Failed to load texture");
-        self.textures.insert("stone".to_string(), texture);
-        let texture = Texture::from_file("resources/textures/player.png").expect("Failed to load texture");
-        self.textures.insert("player".to_string(), texture);
+        self.load("lava", "resources/textures/lava.png");
+        self.load("rock", "resources/textures/rock.png");
+        self.load("player", "resources/textures/player.png");
+        self.load("portal", "resources/textures/portal.png");
     }
 
     pub fn load(&mut self, name: &str, path: &str) {

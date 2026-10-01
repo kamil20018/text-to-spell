@@ -32,6 +32,7 @@ pub struct Game {
 
 struct UiMappings {
     exit_button: UiId,
+    save_button: UiId,
     spell_textbox: UiId,
 }
 
@@ -39,7 +40,13 @@ impl Game {
     pub fn new() -> Self {
         let exit_button_id = UiId::new();
         let exit_button = Button::new(Vector2f::new(0.07, 0.06), Vector2f::new(0.0, 0.0), exit_button_id)
-            .set_bg_color(Color::rgb(100, 100, 100));
+            .set_bg_color(Color::rgb(100, 100, 100))
+            .set_text("exit".to_string());
+
+        let save_button_id = UiId::new();
+        let save_button = Button::new(Vector2f::new(0.07, 0.06), Vector2f::new(0.93, 0.0), save_button_id)
+            .set_bg_color(Color::rgb(100, 100, 100))
+            .set_text("save".to_string());
 
         let spell_textbox_id = UiId::new();
         let spell_textbox = TextBox::new(Vector2f::new(0.46, 0.08), Vector2f::new(0.27, 0.9), spell_textbox_id)
@@ -53,15 +60,11 @@ impl Game {
         Game {
             ui: Ui::new(
                 Vector2f::new(SCREEN_W as f32, SCREEN_H as f32),
-                boxed_vec![
-                    // exit button
-                    exit_button,
-                    // spell textbox
-                    spell_textbox,
-                ],
+                boxed_vec![exit_button, save_button, spell_textbox,],
             ),
             ui_mappings: UiMappings {
                 exit_button: exit_button_id,
+                save_button: save_button_id,
                 spell_textbox: spell_textbox_id,
             },
             world,
@@ -74,6 +77,8 @@ impl Game {
             EventFromUi::ButtonClicked(button_id) => {
                 if *button_id == self.ui_mappings.exit_button {
                     self.transition = Some(Transition::Quit);
+                } else if *button_id == self.ui_mappings.save_button {
+                    println!("save");
                 }
             }
             EventFromUi::TextSubmitted(textbox_id, text) => {
@@ -95,7 +100,13 @@ impl GameState for Game {
     fn process_input(&mut self, event: &Event) {
         match event {
             Event::KeyPressed { code: Key::Escape, .. } => {
-                self.transition = Some(Transition::SwitchTo(StateId::MainMenu))
+                // Esc first blurs whatever UI element is focused; only when
+                // nothing has focus does it leave the game.
+                if self.ui.has_focus() {
+                    self.ui.move_focus_to(None);
+                } else {
+                    self.transition = Some(Transition::SwitchTo(StateId::MainMenu));
+                }
             }
             Event::KeyPressed { code, .. } => {
                 if let Some(key) = self.ui.on_key_pressed(*code) {

@@ -72,6 +72,8 @@ impl GameState for MainMenu {
     fn process_input(&mut self, event: &Event) {
         match event {
             Event::KeyPressed { code: Key::Escape, .. } => self.transition = Some(Transition::Quit),
+            // Enter activates the default action, which is "Play".
+            Event::KeyPressed { code: Key::Enter, .. } => self.transition = Some(Transition::SwitchTo(StateId::Game)),
             Event::KeyPressed { code, .. } => {
                 self.ui.on_key_pressed(*code);
             }

@@ -87,6 +87,11 @@ impl<'a> Ui<'a> {
         Some(key)
     }
 
+    /// Whether any element currently holds keyboard focus.
+    pub fn has_focus(&self) -> bool {
+        self.focused.is_some()
+    }
+
     /// Focuses the element with `new_focus`, or clears focus when it is `None`.
     /// Clicking a non-focusable widget therefore blurs whatever had focus.
     pub fn move_focus_to(&mut self, new_focus: Option<UiId>) {

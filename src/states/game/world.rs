@@ -46,28 +46,11 @@ impl World {
 
     pub fn init(&mut self) {
         self.texture_atlas.init();
-        let player = self.ecs.spawn((
-            components::Player,
-            components::TextureString("player".to_string()),
-            components::TilePosition(Vector2i::new(5, 7)),
-        ));
-        self.entity_mappings.player = player;
+        self.entity_mappings.player = components::spawn_object(&mut self.ecs, components::Player, Vector2i::new(15, 9));
 
-        self.ecs.spawn((
-            components::Rock,
-            components::TextureString("stone".to_string()),
-            components::TilePosition(Vector2i::new(10, 7)),
-        ));
-        // self.ecs.spawn((
-        //     components::Rock,
-        //     components::TextureString("stone".to_string()),
-        //     components::TilePosition(Vector2i::new(7, 2)),
-        // ));
-        // self.ecs.spawn((
-        //     components::Rock,
-        //     components::TextureString("stone".to_string()),
-        //     components::TilePosition(Vector2i::new(3, 3)),
-        // ));
+        components::spawn_object(&mut self.ecs, components::Portal, Vector2i::new(15, 7));
+
+        // components::spawn_object(&mut self.ecs, components::Rock, Vector2i::new(10, 8));
     }
 
     pub fn process_keystroke(&mut self, key: Key) {
@@ -310,7 +293,7 @@ impl World {
         match object {
             Object::Rock => self.ecs.spawn((
                 components::Rock,
-                components::TextureString("stone".to_string()),
+                components::TextureString("rock".to_string()),
                 components::TilePosition(tile_position),
             )),
             Object::Lava => self.ecs.spawn((
