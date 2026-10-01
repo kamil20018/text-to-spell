@@ -58,16 +58,16 @@ impl World {
             components::TextureString("stone".to_string()),
             components::TilePosition(Vector2i::new(10, 7)),
         ));
-        self.ecs.spawn((
-            components::Rock,
-            components::TextureString("stone".to_string()),
-            components::TilePosition(Vector2i::new(7, 2)),
-        ));
-        self.ecs.spawn((
-            components::Rock,
-            components::TextureString("stone".to_string()),
-            components::TilePosition(Vector2i::new(3, 3)),
-        ));
+        // self.ecs.spawn((
+        //     components::Rock,
+        //     components::TextureString("stone".to_string()),
+        //     components::TilePosition(Vector2i::new(7, 2)),
+        // ));
+        // self.ecs.spawn((
+        //     components::Rock,
+        //     components::TextureString("stone".to_string()),
+        //     components::TilePosition(Vector2i::new(3, 3)),
+        // ));
     }
 
     pub fn process_keystroke(&mut self, key: Key) {
@@ -178,12 +178,17 @@ impl World {
         match action {
             Action::Conjure => {
                 if verse.len() < 2 {
-                    println!("missing tokens in conjure");
+                    println!("conjure: missing tokens");
                     return None;
                 }
 
                 let conjure_type = verse.remove(0);
                 let conjure_location = verse.remove(0);
+
+                if verse.len() > 0 {
+                    println!("conjure: too many tokens");
+                    return None;
+                }
 
                 if let Token::Dir(dir) = conjure_location {
                     let dir_vec = self.get_vec_from_dir(dir);
@@ -203,7 +208,9 @@ impl World {
                         _ => return None,
                     };
                 }
-                println!("no correct location token");
+
+                println!("conjure: wrong location token");
+
                 return None;
             }
             Action::Heat => {
@@ -212,16 +219,36 @@ impl World {
                     return None;
                 }
 
-                if verse.remove(0) == Token::GetFromPrev {
-                    if let Some((entity, Token::Object(object))) = passed_object {
-                        return self.heat_object(entity, &object);
+                let heat_target = verse.remove(0);
+
+                if verse.len() > 0 {
+                    println!("heat: too many tokens");
+                    return None;
+                }
+
+                match heat_target {
+                    Token::Object(object) => {
+                        if let Some(entity) = object.get_only_instance(&self.ecs) {
+                            return self.heat_object(entity, &object);
+                        } else {
+                            println!("heat: there are less or more than 0 instances in the world")
+                        }
+                    }
+                    Token::GetFromPrev => {
+                        if let Some((entity, Token::Object(object))) = passed_object {
+                            return self.heat_object(entity, &object);
+                        }
+                    }
+                    _ => {
+                        println!("heat: wrong target");
                     }
                 }
-                println!("heat requres piped entity");
+
+                println!("heat requires piped entity");
                 return None;
             }
             Action::Move => {
-                if verse.len() < 1 {
+                if verse.len() < 2 {
                     println!("move: missing tokens");
                     return None;
                 }
