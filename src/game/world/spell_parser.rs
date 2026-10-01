@@ -1,54 +1,69 @@
 use std::{result::Result, str::FromStr};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
+    Action(Action),
+    Object(Object),
+    Dir(Dir),
+    GetFromPrev,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Action {
     Conjure,
     Move,
     Heat,
+}
 
+#[derive(Debug, PartialEq)]
+pub enum Object {
     Rock,
     Lava,
     Player,
-    // Water,
-    // Steam,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Dir {
     N,
     S,
     W,
     E,
-    // Up,
-    // Down,
 }
 
-
+impl Object {
+    pub fn on_heat(&self) -> Self {
+        match &self {
+            Object::Rock => Object::Lava,
+            Object::Lava => Object::Lava,
+            Object::Player => Object::Player,
+        }
+    }
+}
 
 impl FromStr for Token {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "conjure" => Ok(Token::Conjure),
-            "move" => Ok(Token::Move),
-            "heat" => Ok(Token::Heat),
+            "conjure" => Ok(Token::Action(Action::Conjure)),
+            "move" => Ok(Token::Action(Action::Move)),
+            "heat" => Ok(Token::Action(Action::Heat)),
 
-            "rock" => Ok(Token::Rock),
-            "lava" => Ok(Token::Lava),
-            "player" => Ok(Token::Player),
+            "rock" => Ok(Token::Object(Object::Rock)),
+            "lava" => Ok(Token::Object(Object::Lava)),
+            "player" => Ok(Token::Object(Object::Player)),
+
+            "pipe" => Ok(Token::GetFromPrev),
             // "water" => Ok(Token::Water),
             // "steam" => Ok(Token::Steam),
-            "n" => Ok(Token::N),
-            "s" => Ok(Token::S),
-            "w" => Ok(Token::W),
-            "e" => Ok(Token::E),
+            "n" => Ok(Token::Dir(Dir::N)),
+            "s" => Ok(Token::Dir(Dir::S)),
+            "w" => Ok(Token::Dir(Dir::W)),
+            "e" => Ok(Token::Dir(Dir::E)),
             // "up" => Ok(Token::Up),
             // "down" => Ok(Token::Down),
             _ => Err(()),
         }
-    }
-}
-
-impl Token {
-    fn is_thing(&self) -> bool {
-        matches!(&self, Token::Rock | Token::Lava)
     }
 }
 

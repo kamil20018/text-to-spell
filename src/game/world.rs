@@ -1,4 +1,4 @@
-use hecs::{Entity, Query};
+use hecs::{DynamicBundle, Entity, Query};
 use sfml::{
     cpp::FBox,
     graphics::{
@@ -8,12 +8,15 @@ use sfml::{
     window::Key,
 };
 
-use crate::game::{constant, world::components::*};
+use crate::game::{
+    constant,
+    world::{components::*, spell_parser::Object::Lava},
+};
 
 pub mod components;
 pub mod spell_parser;
 pub mod texture_atlas;
-use spell_parser::Token;
+use spell_parser::*;
 use texture_atlas::*;
 
 /// Grid line thickness in pixels.
@@ -146,48 +149,110 @@ impl World {
     }
 
     pub fn cast_spell(&mut self, spell_text: &String) {
-        let mut sentences: Vec<Vec<Token>> = spell_parser::parse_spell(spell_text);
+        let verses: Vec<Vec<Token>> = spell_parser::parse_spell(spell_text);
 
-        println!("{:?}", sentences);
-        for sentence in &mut sentences {
-            while !sentence.is_empty() {
-                let token = sentence.remove(0);
-                match token {
-                    Token::Conjure => {
-                        let conjure_type = sentence.remove(0);
-                        let conjure_location = sentence.remove(0);
+        println!("{:?}", verses);
 
-                        let dir = match conjure_location {
-                            Token::N => Vector2i::new(0, -1),
-                            Token::S => Vector2i::new(0, 1),
-                            Token::W => Vector2i::new(-1, 0),
-                            Token::E => Vector2i::new(1,0 ),
-                            _ => Vector2i::new(0,0 ),
-                        };
-                        match conjure_type {
-                            Token::Rock => {
-                                let _ = self.ecs.spawn((
-                                    Rock,
-                                    TextureString("stone".to_string()),
-                                    TilePosition(self.get_player_tile_pos()+ dir),
-                                ));
+        let mut passed_object: Option<(Entity, Token)> = None;
+
+        for verse in verses {
+            passed_object = self.cast_verse(verse, passed_object);
+        }
+    }
+
+    pub fn cast_verse(
+        &mut self,
+        mut verse: Vec<Token>,
+        passed_object: Option<(Entity, Token)>,
+    ) -> Option<(Entity, Token)> {
+        let token = verse.remove(0);
+        let Token::Action(action) = token else {
+            panic!("Expected an Action token");
+        };
+
+        match action {
+            Action::Conjure => {
+                let conjure_type = verse.remove(0);
+                let conjure_location = verse.remove(0);
+
+                if let Token::Dir(dir) = conjure_location {
+                    let dir_vec = self.get_vec_from_dir(dir);
+                    let tile_position = self.get_player_tile_pos() + dir_vec;
+                    match conjure_type {
+                        Token::GetFromPrev => {
+                            if let Some((_, Token::Object(object))) = passed_object {
+                                let entity = self.spawn_object(&object, tile_position);
+                                return Some((entity, Token::Object(object)));
                             }
-                            _ => {}
+                            return None;
                         }
-                    }
-                    Token::Heat => {
-                        println!("heat");
-                    }
-                    Token::Move => {
-                        println!("move");
-                    }
-                    _ => {
-                        println!("bad spell");
-                        return;
+                        Token::Object(object) => {
+                            let entity = self.spawn_object(&object, tile_position);
+                            return Some((entity, Token::Object(object)));
+                        }
+                        _ => return None,
+                    };
+                }
+                println!("no correct location token");
+                return None;
+            }
+            Action::Heat => {
+                if verse.remove(0) == Token::GetFromPrev {
+                    if let Some((entity, Token::Object(object))) = passed_object {
+                        return self.heat_object(entity, &object);
                     }
                 }
+                println!("heat requres piped entity");
+                return None;
+            }
+            Action::Move => {
+                if let Token::GetFromPrev = verse.remove(0) {
+                    let dir = verse.remove(0);
+
+                    if let Token::Dir(dir) = dir {
+                        if let Some((entity, object)) = passed_object {
+                            self.move_entity(&entity, self.get_vec_from_dir(dir));
+                            return Some((entity, object))
+                        }
+                        
+                    }
+                }
+                return None;
             }
         }
+    }
+
+    pub fn get_vec_from_dir(&self, dir: Dir) -> Vector2i {
+        match dir {
+            Dir::N => Vector2i::new(0, -1),
+            Dir::S => Vector2i::new(0, 1),
+            Dir::W => Vector2i::new(-1, 0),
+            Dir::E => Vector2i::new(1, 0),
+        }
+    }
+
+    pub fn spawn_object(&mut self, object: &Object, tile_position: Vector2i) -> Entity {
+        match object {
+            Object::Rock => self
+                .ecs
+                .spawn((Rock, TextureString("stone".to_string()), TilePosition(tile_position))),
+            Object::Lava => self
+                .ecs
+                .spawn((Lava, TextureString("lava".to_string()), TilePosition(tile_position))),
+            _ => Entity::DANGLING,
+        }
+    }
+
+    pub fn heat_object(&mut self, entity: Entity, object: &Object) -> Option<(Entity, Token)> {
+        let tile_position = *self.ecs.get::<&TilePosition>(entity).unwrap();
+        self.ecs.despawn(entity).unwrap();
+        let object = object.on_heat();
+        let entity = self.spawn_object(&object.on_heat(), tile_position.0);
+        Some((entity, Token::Object(object)))
+    }
+
+    pub fn move_entity(&mut self, entity: &Entity, vec: Vector2i) {
+        self.ecs.get::<&mut TilePosition>(*entity).unwrap().0 += vec;
     }
 
     pub fn get_player_tile_pos(&self) -> Vector2i {
