@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use sfml::{
     cpp::FBox,
     graphics::{Color, RenderTarget, RenderWindow},
@@ -12,7 +10,6 @@ use crate::ui::{
     // macros,
     Ui,
     event::EventFromUi,
-    traits::UiElement,
     ui_id::UiId,
     widgets::{Button, TextBox},
 };
@@ -64,16 +61,6 @@ impl<'a> Game<'a> {
         let exit_button_id = UiId::new();
         let exit_button = Button::new(Vector2f::new(0.07, 0.06), Vector2f::new(0.0, 0.0), exit_button_id)
             .set_bg_color(Color::rgb(100, 100, 100));
-
-        let mut spell_component_grid_mappings = HashSet::new();
-        let mut grid_buttons: Vec<Box<dyn UiElement>> = Vec::new();
-        for _row in 0..11 {
-            for _col in 0..11 {
-                let id = UiId::new();
-                spell_component_grid_mappings.insert(id);
-                grid_buttons.push(Box::new(Button::new_dynamic(id).set_bg_color(Color::WHITE)));
-            }
-        }
 
         let spell_textbox_id = UiId::new();
         let spell_textbox = TextBox::new(Vector2f::new(0.46, 0.08), Vector2f::new(0.27, 0.9), spell_textbox_id)

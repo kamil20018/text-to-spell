@@ -1,6 +1,6 @@
 use std::{result::Result, str::FromStr};
 
-use hecs::{DynamicBundle, Entity, World};
+use hecs::{Entity, World};
 
 use crate::game::world::components;
 

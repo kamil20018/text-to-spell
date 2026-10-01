@@ -1,4 +1,4 @@
-use hecs::{DynamicBundle, Entity, Query};
+use hecs::Entity;
 use sfml::{
     cpp::FBox,
     graphics::{
@@ -8,7 +8,7 @@ use sfml::{
     window::Key,
 };
 
-use crate::game::{constant, world::spell_parser::Object::Lava};
+use crate::game::constant;
 
 pub mod components;
 pub mod spell_parser;
