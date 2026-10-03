@@ -18,6 +18,7 @@ impl TextureAtlas {
         self.load("rock", "resources/textures/rock.png");
         self.load("player", "resources/textures/player.png");
         self.load("portal", "resources/textures/portal.png");
+        self.load("wall", "resources/textures/wall.png")
     }
 
     pub fn load(&mut self, name: &str, path: &str) {

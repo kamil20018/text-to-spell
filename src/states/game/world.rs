@@ -45,13 +45,44 @@ impl World {
         }
     }
 
-    pub fn init(&mut self) {
+    pub fn init(&mut self, level_to_load: Option<&str>) {
         self.texture_atlas.init();
+
+        if let Some(level_path) = level_to_load {
+            self.load_from_file(&level_path);
+            return;
+        }
         self.entity_mappings.player = components::spawn_object(&mut self.ecs, components::Player, Vector2i::new(15, 9));
 
         components::spawn_object(&mut self.ecs, components::Portal, Vector2i::new(15, 7));
 
         // components::spawn_object(&mut self.ecs, components::Rock, Vector2i::new(10, 8));
+    }
+
+    /// Replaces this world's entities with those from a JSON save.
+    pub fn load_from_json(&mut self, json: &str) -> Result<(), serialization::LoadError> {
+        self.install(serialization::world_from_json(json)?);
+        Ok(())
+    }
+
+    /// Reads `path` and replaces this world's entities with those from it.
+    pub fn load_from_file(&mut self, path: &str) -> Result<(), serialization::LoadError> {
+        self.install(serialization::world_from_file(path)?);
+        Ok(())
+    }
+
+    /// Installs a freshly deserialized ECS world, refreshing cached mappings.
+    fn install(&mut self, ecs: hecs::World) {
+        self.ecs = ecs;
+        self.entity_mappings.player = self.find_player();
+    }
+
+    fn find_player(&self) -> Entity {
+        self.ecs
+            .iter()
+            .find(|entity| entity.has::<components::Player>())
+            .map(|entity| entity.entity())
+            .unwrap_or(Entity::DANGLING)
     }
 
     pub fn process_keystroke(&mut self, key: Key) {
@@ -301,6 +332,12 @@ impl World {
                 components::Lava,
                 components::TextureString("lava".to_string()),
                 components::TilePosition(tile_position),
+            )),
+            Object::Wall => self.ecs.spawn((
+                components::Wall,
+                components::TextureString("wall".to_string()),
+                components::TilePosition(tile_position),
+                components::Impassable,
             )),
             _ => Entity::DANGLING,
         }

@@ -17,6 +17,10 @@ where
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Player;
 #[derive(Debug, Serialize, Deserialize)]
+pub struct Impassable;
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Wall;
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Portal;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Rock;

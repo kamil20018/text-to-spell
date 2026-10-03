@@ -24,6 +24,7 @@ pub enum Object {
     Rock,
     Lava,
     Player,
+    Wall,
 }
 
 #[derive(Debug, PartialEq)]
@@ -40,6 +41,7 @@ impl Object {
             Object::Rock => Object::Lava,
             Object::Lava => Object::Lava,
             Object::Player => Object::Player,
+            Object::Wall => Object::Wall,
         }
     }
 
@@ -48,6 +50,7 @@ impl Object {
             Self::Rock => get_instances::<components::Rock>(world),
             Self::Lava => get_instances::<components::Lava>(world),
             Self::Player => get_instances::<components::Player>(world),
+            Self::Wall => get_instances::<components::Wall>(world),
         }
     }
 
@@ -81,6 +84,7 @@ impl FromStr for Token {
             "rock" => Ok(Token::Object(Object::Rock)),
             "lava" => Ok(Token::Object(Object::Lava)),
             "player" => Ok(Token::Object(Object::Player)),
+            "wall" => Ok(Token::Object(Object::Wall)),
 
             "pipe" => Ok(Token::GetFromPrev),
             // "water" => Ok(Token::Water),

@@ -1,3 +1,5 @@
+use std::{fs::File, io::Write};
+
 use sfml::{
     graphics::{Color, RenderTarget},
     system::Vector2f,
@@ -55,7 +57,7 @@ impl Game {
             .set_character_size(28);
 
         let mut world = World::new();
-        world.init();
+        world.init(Some("resources/levels/level_3.json"));
 
         Game {
             ui: Ui::new(
@@ -80,6 +82,9 @@ impl Game {
                 } else if *button_id == self.ui_mappings.save_button {
                     let json = world::serialization::world_to_json(&self.world);
                     println!("{json}");
+                    let mut file = File::create("resources/levels/test.json").expect("Could not create file!");
+
+                    file.write_all(json.as_bytes()).expect("Cannot write to the file!");
                 }
             }
             EventFromUi::TextSubmitted(textbox_id, text) => {
