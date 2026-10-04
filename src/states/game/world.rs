@@ -2,7 +2,8 @@ use hecs::Entity;
 use sfml::{
     cpp::FBox,
     graphics::{
-        Color, Drawable, RectangleShape, RenderStates, RenderTarget, RenderTexture, Shape, Sprite, Transformable,
+        Color, Drawable, RectangleShape, RenderStates, RenderTarget, RenderTexture, Shape, Sprite, Texture,
+        Transformable,
     },
     system::{Vector2f, Vector2i},
     window::Key,
@@ -21,6 +22,9 @@ use texture_atlas::*;
 const GRID_LINE_THICKNESS: f32 = 1.0;
 const CELL_WIDTH: f32 = 60.0;
 const CELL_HEIGHT: f32 = 60.0;
+/// Number of cells in the level grid.
+const GRID_COLS: i32 = 32;
+const GRID_ROWS: i32 = 18;
 
 pub struct World {
     pub ecs: hecs::World,
@@ -85,6 +89,73 @@ impl World {
             .unwrap_or(Entity::DANGLING)
     }
 
+    /// An owned copy of a loaded texture, for use by UI widgets.
+    pub fn texture(&self, name: &str) -> Option<FBox<Texture>> {
+        self.texture_atlas.get(name).map(|texture| texture.to_owned())
+    }
+
+    /// Converts a screen position to the grid cell under it.
+    pub fn screen_to_tile(&self, screen_pos: Vector2f) -> Vector2i {
+        Vector2i::new((screen_pos.x / CELL_WIDTH) as i32, (screen_pos.y / CELL_HEIGHT) as i32)
+    }
+
+    fn in_bounds(&self, tile: Vector2i) -> bool {
+        tile.x >= 0 && tile.y >= 0 && tile.x < GRID_COLS && tile.y < GRID_ROWS
+    }
+
+    /// The entity for `object` sitting on `tile`, if any.
+    pub fn object_entity_at(&self, object: &Object, tile: Vector2i) -> Option<Entity> {
+        for entity in object.get_instances(&self.ecs) {
+            if let Ok(position) = self.ecs.get::<&components::TilePosition>(entity)
+                && (*position).0 == tile
+            {
+                return Some(entity);
+            }
+        }
+        None
+    }
+
+    /// Spawns `object` on `tile`, or despawns an existing instance there.
+    ///
+    /// Returns `true` when an object was spawned and `false` when one was
+    /// removed (or the tile was outside the grid).
+    pub fn toggle_object_at(&mut self, object: &Object, tile: Vector2i) -> bool {
+        if !self.in_bounds(tile) {
+            return false;
+        }
+        if let Some(entity) = self.object_entity_at(object, tile) {
+            self.ecs.despawn(entity).unwrap();
+            false
+        } else {
+            self.spawn_object(object, tile);
+            true
+        }
+    }
+
+    /// Despawns every non-player object sitting on `tile`.
+    ///
+    /// Returns `true` when at least one object was removed.
+    pub fn despawn_at(&mut self, tile: Vector2i) -> bool {
+        let entities: Vec<Entity> = self
+            .ecs
+            .query::<(Entity, &components::TilePosition)>()
+            .iter()
+            .filter(|(_, position)| position.0 == tile)
+            .map(|(entity, _)| entity)
+            .collect();
+
+        let mut removed = false;
+        for entity in entities {
+            // The player is not an editor object, so leave it alone.
+            if self.ecs.get::<&components::Player>(entity).is_ok() {
+                continue;
+            }
+            self.ecs.despawn(entity).unwrap();
+            removed = true;
+        }
+        removed
+    }
+
     pub fn process_keystroke(&mut self, key: Key) {
         match key {
             Key::W => {
@@ -119,7 +190,7 @@ impl World {
 
     fn draw(&mut self) {
         self.render_texture.clear(Color::TRANSPARENT);
-        self.draw_grid_lines(Vector2i::new(32, 18));
+        self.draw_grid_lines(Vector2i::new(GRID_COLS, GRID_ROWS));
         self.draw_textures();
         self.render_texture.display();
     }
@@ -323,22 +394,11 @@ impl World {
 
     pub fn spawn_object(&mut self, object: &Object, tile_position: Vector2i) -> Entity {
         match object {
-            Object::Rock => self.ecs.spawn((
-                components::Rock,
-                components::TextureString("rock".to_string()),
-                components::TilePosition(tile_position),
-            )),
-            Object::Lava => self.ecs.spawn((
-                components::Lava,
-                components::TextureString("lava".to_string()),
-                components::TilePosition(tile_position),
-            )),
-            Object::Wall => self.ecs.spawn((
-                components::Wall,
-                components::TextureString("wall".to_string()),
-                components::TilePosition(tile_position),
-                components::Impassable,
-            )),
+            Object::Rock => components::spawn_object(&mut self.ecs, components::Rock, tile_position),
+            Object::Lava => components::spawn_object(&mut self.ecs, components::Lava, tile_position),
+            Object::Player => components::spawn_object(&mut self.ecs, components::Player, tile_position),
+            Object::Wall => components::spawn_object(&mut self.ecs, components::Wall, tile_position),
+            Object::Portal => components::spawn_object(&mut self.ecs, components::Portal, tile_position),
             _ => Entity::DANGLING,
         }
     }

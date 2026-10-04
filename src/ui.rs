@@ -62,9 +62,13 @@ impl<'a> Ui<'a> {
         self.render_texture.display();
     }
 
-    pub fn on_click(&mut self, click_pos: Vector2f) {
+    /// Dispatches a click to this UI's children.
+    ///
+    /// Returns `true` when a child consumed the click, so the game can tell a
+    /// click on the UI apart from one on the world behind it.
+    pub fn on_click(&mut self, click_pos: Vector2f) -> bool {
         if !self.widget.clickable || !self.widget.was_clicked(click_pos) {
-            return;
+            return false;
         }
 
         self.move_focus_to(self.children.iter().rev().find_map(|c| c.focusable_at(click_pos)));
@@ -73,9 +77,10 @@ impl<'a> Ui<'a> {
         for child in self.children.iter().rev() {
             if let Some(child_events) = child.on_click(click_pos) {
                 self.event_queue.extend(child_events);
-                return;
+                return true;
             }
         }
+        false
     }
 
     /// Routes a key press to the focused element, if there is one.

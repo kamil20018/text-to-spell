@@ -19,12 +19,13 @@ pub enum Action {
     Heat,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Object {
     Rock,
     Lava,
     Player,
     Wall,
+    Portal,
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,12 +37,21 @@ pub enum Dir {
 }
 
 impl Object {
+    /// Name of the texture used to draw this object in the world.
+    pub fn texture_name(&self) -> &'static str {
+        match self {
+            Object::Rock => "rock",
+            Object::Lava => "lava",
+            Object::Player => "player",
+            Object::Wall => "wall",
+            Object::Portal => "portal",
+        }
+    }
+
     pub fn on_heat(&self) -> Self {
         match &self {
             Object::Rock => Object::Lava,
-            Object::Lava => Object::Lava,
-            Object::Player => Object::Player,
-            Object::Wall => Object::Wall,
+            _ => *self,
         }
     }
 
@@ -51,11 +61,8 @@ impl Object {
             Self::Lava => get_instances::<components::Lava>(world),
             Self::Player => get_instances::<components::Player>(world),
             Self::Wall => get_instances::<components::Wall>(world),
+            Self::Portal => get_instances::<components::Portal>(world),
         }
-    }
-
-    pub fn count_instances(&self, world: &World) -> usize {
-        self.get_instances(world).len()
     }
 
     pub fn get_only_instance(&self, world: &World) -> Option<Entity> {

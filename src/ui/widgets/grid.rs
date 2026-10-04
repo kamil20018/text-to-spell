@@ -118,7 +118,10 @@ impl<'a> CustomUi for Grid<'a> {
                 return Some(child_events);
             }
         }
-        None
+
+        // The click landed on the grid itself (e.g. a gap between cells), so
+        // swallow it rather than letting it fall through to whatever is behind.
+        Some(Vec::new())
     }
 
     fn focusable_at(&self, pos: Vector2f) -> Option<UiId> {
