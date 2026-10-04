@@ -31,7 +31,6 @@ pub struct Level {
     /// Every palette button and the tool it selects.
     editor_tools: [(UiId, EditorTool); 6],
     selected_tool: EditorTool,
-    editor_active: bool,
     world: World,
     transition: Option<Transition>,
 }
@@ -130,6 +129,9 @@ impl Level {
             }
         }
 
+        // The editor starts hidden; the "edit" button toggles its visibility.
+        editor_ui.set_visible(false);
+
         Level {
             ui: Ui::new(
                 Vector2f::new(SCREEN_W as f32, SCREEN_H as f32),
@@ -144,7 +146,6 @@ impl Level {
             },
             editor_tools,
             selected_tool: EditorTool::Spawn(Object::Rock),
-            editor_active: false,
             world,
             transition: None,
         }
@@ -156,7 +157,7 @@ impl Level {
                 if *button_id == self.ui_mappings.exit_button {
                     self.transition = Some(Transition::Quit);
                 } else if *button_id == self.ui_mappings.edit_button {
-                    self.editor_active = !self.editor_active;
+                    self.toggle_editor();
                 } else if *button_id == self.ui_mappings.save_button {
                     let json = world::serialization::world_to_json(&self.world);
                     println!("{json}");
@@ -196,6 +197,12 @@ impl Level {
             }
         }
     }
+
+    /// Shows or hides the level editor palette.
+    fn toggle_editor(&mut self) {
+        let visible = self.editor_ui.is_visible();
+        self.editor_ui.set_visible(!visible);
+    }
 }
 
 impl Default for Level {
@@ -221,7 +228,7 @@ impl GameState for Level {
                     //process keystroke if not consumed by ui
                     match key {
                         Key::T => self.ui.move_focus_to(Some(self.ui_mappings.spell_textbox)),
-                        Key::E => self.editor_active = !self.editor_active,
+                        Key::E => self.toggle_editor(),
                         _ => self.world.process_keystroke(key),
                     }
                 }
@@ -229,12 +236,11 @@ impl GameState for Level {
             Event::MouseButtonPressed { button, x, y } => {
                 if *button == mouse::Button::Left {
                     let click_pos = Vector2f::new(*x as f32, *y as f32);
-                    let consumed = self.ui.on_click(click_pos);
-                    if self.editor_active {
-                        let consumed = consumed || self.editor_ui.on_click(click_pos);
-                        if !consumed {
-                            self.edit_world_at(click_pos);
-                        }
+                    // A click no UI consumed paints the world, but only while
+                    // the editor palette is shown (i.e. edit mode is on).
+                    let consumed = self.ui.on_click(click_pos) || self.editor_ui.on_click(click_pos);
+                    if !consumed && self.editor_ui.is_visible() {
+                        self.edit_world_at(click_pos);
                     }
                 }
             }
@@ -248,12 +254,11 @@ impl GameState for Level {
         }
         self.ui.update();
 
-        if self.editor_active {
-            while let Some(event) = self.editor_ui.next_event() {
-                self.process_editor_event(&event);
-            }
-            self.editor_ui.update();
+        // A hidden UI no-ops here, so there is nothing to guard.
+        while let Some(event) = self.editor_ui.next_event() {
+            self.process_editor_event(&event);
         }
+        self.editor_ui.update();
 
         self.world.update();
     }
@@ -261,9 +266,8 @@ impl GameState for Level {
     fn draw(&self, target: &mut dyn RenderTarget) {
         target.draw(&self.world);
         target.draw(&self.ui);
-        if self.editor_active {
-            target.draw(&self.editor_ui);
-        }
+        // Draws nothing while hidden.
+        target.draw(&self.editor_ui);
     }
 
     fn transition(&mut self) -> Option<Transition> {

@@ -26,6 +26,7 @@ pub struct Ui<'a> {
     children: Vec<Box<dyn UiElement>>,
     event_queue: VecDeque<EventFromUi>,
     focused: Option<UiId>,
+    visible: bool,
     widget: WidgetData<'a>,
     render_texture: FBox<RenderTexture>,
 }
@@ -51,6 +52,10 @@ impl<'a> Ui<'a> {
     }
 
     pub fn update(&mut self) {
+        if !self.visible {
+            return;
+        }
+
         self.render_texture.clear(Color::TRANSPARENT);
         for child in &mut self.children {
             child.update();
@@ -67,7 +72,7 @@ impl<'a> Ui<'a> {
     /// Returns `true` when a child consumed the click, so the game can tell a
     /// click on the UI apart from one on the world behind it.
     pub fn on_click(&mut self, click_pos: Vector2f) -> bool {
-        if !self.widget.clickable || !self.widget.was_clicked(click_pos) {
+        if !self.visible || !self.widget.clickable || !self.widget.was_clicked(click_pos) {
             return false;
         }
 
@@ -85,11 +90,27 @@ impl<'a> Ui<'a> {
 
     /// Routes a key press to the focused element, if there is one.
     pub fn on_key_pressed(&mut self, key: Key) -> Option<Key> {
+        if !self.visible {
+            return Some(key);
+        }
         if let Some(events) = self.focused_mut().and_then(|el| el.on_key_pressed(key)) {
             self.event_queue.extend(events);
             return None;
         }
         Some(key)
+    }
+
+    /// Whether this UI is currently shown and interactive.
+    pub fn is_visible(&self) -> bool {
+        self.visible
+    }
+
+    /// Shows or hides the whole UI.
+    ///
+    /// A hidden UI is not drawn, does not advance its widgets, and consumes
+    /// neither clicks nor key presses.
+    pub fn set_visible(&mut self, visible: bool) {
+        self.visible = visible;
     }
 
     /// Whether any element currently holds keyboard focus.
@@ -145,6 +166,7 @@ impl<'a> Default for Ui<'a> {
         Self {
             event_queue: VecDeque::new(),
             focused: None,
+            visible: true,
             parent_size: Vector2f::new(0.0, 0.0),
             render_texture: RenderTexture::new(1, 1).unwrap(),
             widget: WidgetData {
@@ -165,6 +187,10 @@ impl<'b> Drawable for Ui<'b> {
         target: &mut dyn RenderTarget,
         states: &RenderStates<'texture, 'shader, 'shader_texture>,
     ) {
+        if !self.visible {
+            return;
+        }
+
         let mut sprite = Sprite::with_texture(self.render_texture.texture());
         sprite.set_position(Vector2f::new(0.0, 0.0));
         target.draw_with_renderstates(&sprite, states);
