@@ -7,7 +7,7 @@ use sfml::{
 use crate::{
     boxed_vec,
     state_manager::{GameState, StateId, Transition},
-    states::game::constant::{SCREEN_H, SCREEN_W},
+    states::level::constant::{SCREEN_H, SCREEN_W},
     ui::{
         Ui,
         event::EventFromUi,
@@ -72,7 +72,6 @@ impl GameState for MainMenu {
     fn process_input(&mut self, event: &Event) {
         match event {
             Event::KeyPressed { code: Key::Escape, .. } => self.transition = Some(Transition::Quit),
-            // Enter activates the default action, which is "Play".
             Event::KeyPressed { code: Key::Enter, .. } => self.transition = Some(Transition::SwitchTo(StateId::Game)),
             Event::KeyPressed { code, .. } => {
                 self.ui.on_key_pressed(*code);

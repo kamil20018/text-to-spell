@@ -9,7 +9,7 @@ use sfml::{
     window::Key,
 };
 
-use crate::states::game::constant;
+use crate::states::level::constant;
 
 pub mod components;
 pub mod serialization;

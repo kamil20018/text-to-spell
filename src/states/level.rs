@@ -24,9 +24,7 @@ use constant::*;
 pub mod world;
 use world::{spell_parser::Object, *};
 
-/// The playable screen: the world plus the in-game UI (a spell textbox and an
-/// exit button), and an optional level editor.
-pub struct Game {
+pub struct Level {
     ui: Ui<'static>,
     editor_ui: Ui<'static>,
     ui_mappings: UiMappings,
@@ -54,7 +52,7 @@ struct UiMappings {
     spell_textbox: UiId,
 }
 
-impl Game {
+impl Level {
     pub fn new() -> Self {
         let exit_button_id = UiId::new();
         let exit_button = Button::new(Vector2f::new(0.07, 0.06), Vector2f::new(0.0, 0.0), exit_button_id)
@@ -132,7 +130,7 @@ impl Game {
             }
         }
 
-        Game {
+        Level {
             ui: Ui::new(
                 Vector2f::new(SCREEN_W as f32, SCREEN_H as f32),
                 boxed_vec![exit_button, edit_button, save_button, spell_textbox],
@@ -200,13 +198,13 @@ impl Game {
     }
 }
 
-impl Default for Game {
+impl Default for Level {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl GameState for Game {
+impl GameState for Level {
     fn process_input(&mut self, event: &Event) {
         match event {
             Event::KeyPressed { code: Key::Escape, .. } => {

@@ -7,12 +7,10 @@ use sfml::{
 
 use crate::{
     state_manager::{StateId, StateManager},
-    states::game::constant::{SCREEN_H, SCREEN_W},
+    states::level::constant::{SCREEN_H, SCREEN_W},
     ui::style::BACKGROUND_DARK_BLUE,
 };
 
-/// Owns the window and the main loop, and hands each frame to the
-/// [`StateManager`].
 pub struct App {
     window: FBox<RenderWindow>,
     state_manager: StateManager,
