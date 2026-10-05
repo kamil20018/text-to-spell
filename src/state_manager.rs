@@ -5,7 +5,7 @@ use crate::states::{level::Level, main_menu::MainMenu};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateId {
     MainMenu,
-    Game,
+    Game(u32),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,7 +40,7 @@ impl StateManager {
     fn build(id: StateId) -> Box<dyn GameState> {
         match id {
             StateId::MainMenu => Box::new(MainMenu::new()),
-            StateId::Game => Box::new(Level::new()),
+            StateId::Game(level) => Box::new(Level::new(level)),
         }
     }
 

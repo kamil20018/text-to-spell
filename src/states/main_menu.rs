@@ -72,7 +72,9 @@ impl GameState for MainMenu {
     fn process_input(&mut self, event: &Event) {
         match event {
             Event::KeyPressed { code: Key::Escape, .. } => self.transition = Some(Transition::Quit),
-            Event::KeyPressed { code: Key::Enter, .. } => self.transition = Some(Transition::SwitchTo(StateId::Game)),
+            Event::KeyPressed { code: Key::Enter, .. } => {
+                self.transition = Some(Transition::SwitchTo(StateId::Game(1)))
+            }
             Event::KeyPressed { code, .. } => {
                 self.ui.on_key_pressed(*code);
             }
@@ -89,7 +91,7 @@ impl GameState for MainMenu {
         while let Some(event) = self.ui.next_event() {
             match event {
                 EventFromUi::ButtonClicked(id) if id == self.play_button => {
-                    self.transition = Some(Transition::SwitchTo(StateId::Game));
+                    self.transition = Some(Transition::SwitchTo(StateId::Game(1)));
                 }
                 EventFromUi::ButtonClicked(id) if id == self.quit_button => {
                     self.transition = Some(Transition::Quit);

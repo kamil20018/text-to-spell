@@ -32,11 +32,12 @@ pub struct Level {
     editor_tools: [(UiId, EditorTool); 6],
     selected_tool: EditorTool,
     world: World,
+    current_level: u32,
     transition: Option<Transition>,
 }
 
 /// What a click in the level editor does.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum EditorTool {
     /// Place the object, or remove it when one is already on the tile.
     Spawn(Object),
@@ -52,7 +53,7 @@ struct UiMappings {
 }
 
 impl Level {
-    pub fn new() -> Self {
+    pub fn new(level: u32) -> Self {
         let exit_button_id = UiId::new();
         let exit_button = Button::new(Vector2f::new(0.07, 0.06), Vector2f::new(0.0, 0.0), exit_button_id)
             .set_bg_color(Color::rgb(100, 100, 100))
@@ -75,7 +76,7 @@ impl Level {
             .set_character_size(28);
 
         let mut world = World::new();
-        world.init(Some("resources/levels/level_3.json"));
+        world.init(Some(&format!("resources/levels/level_{}.json", level)));
 
         // Editor palette: one button per tool (placeable objects, then eraser).
         let editor_tools = [
@@ -147,6 +148,7 @@ impl Level {
             editor_tools,
             selected_tool: EditorTool::Spawn(Object::Rock),
             world,
+            current_level: level,
             transition: None,
         }
     }
@@ -190,7 +192,7 @@ impl Level {
         let tile = self.world.screen_to_tile(screen_pos);
         match self.selected_tool {
             EditorTool::Spawn(object) => {
-                self.world.toggle_object_at(&object, tile);
+                self.world.spawn_object(&object, tile);
             }
             EditorTool::Erase => {
                 self.world.despawn_at(tile);
@@ -207,7 +209,7 @@ impl Level {
 
 impl Default for Level {
     fn default() -> Self {
-        Self::new()
+        Self::new(1)
     }
 }
 
@@ -261,6 +263,10 @@ impl GameState for Level {
         self.editor_ui.update();
 
         self.world.update();
+
+        if self.world.player_on_portal() {
+            self.transition = Some(Transition::SwitchTo(StateId::Game(self.current_level + 1)));
+        }
     }
 
     fn draw(&self, target: &mut dyn RenderTarget) {

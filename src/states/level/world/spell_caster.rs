@@ -45,7 +45,7 @@ impl World {
                 }
 
                 if let Token::Dir(dir) = conjure_location {
-                    let dir_vec = self.get_vec_from_dir(dir);
+                    let dir_vec = dir.to_vec();
                     let tile_position = self.get_player_tile_pos() + dir_vec;
                     match conjure_type {
                         Token::GetFromPrev => {
@@ -140,7 +140,7 @@ impl World {
                     if let Some(entity) = entity_to_move
                         && let Some(object) = return_object
                     {
-                        self.move_entity(&entity, self.get_vec_from_dir(dir));
+                        self.move_entity(&entity, dir.to_vec());
                         return Some((entity, object));
                     }
                 }
@@ -148,15 +148,6 @@ impl World {
                 println!("move: wrong directional token");
                 return None;
             }
-        }
-    }
-
-    pub fn get_vec_from_dir(&self, dir: Dir) -> Vector2i {
-        match dir {
-            Dir::N => Vector2i::new(0, -1),
-            Dir::S => Vector2i::new(0, 1),
-            Dir::W => Vector2i::new(-1, 0),
-            Dir::E => Vector2i::new(1, 0),
         }
     }
 

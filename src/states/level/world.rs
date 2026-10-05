@@ -9,7 +9,7 @@ use sfml::{
     window::Key,
 };
 
-use crate::states::level::constant;
+use crate::states::level::{constant, world::components::TilePosition};
 
 pub mod components;
 pub mod serialization;
@@ -31,11 +31,6 @@ pub struct World {
     pub ecs: hecs::World,
     texture_atlas: TextureAtlas,
     render_texture: FBox<RenderTexture>,
-    entity_mappings: EntityMappings,
-}
-
-struct EntityMappings {
-    player: Entity,
 }
 
 impl World {
@@ -44,9 +39,6 @@ impl World {
             ecs: hecs::World::new(),
             texture_atlas: TextureAtlas::new(),
             render_texture: RenderTexture::new(constant::SCREEN_W, constant::SCREEN_H).unwrap(),
-            entity_mappings: EntityMappings {
-                player: Entity::DANGLING,
-            },
         }
     }
 
@@ -54,42 +46,14 @@ impl World {
         self.texture_atlas.init();
 
         if let Some(level_path) = level_to_load {
-            self.load_from_file(&level_path).unwrap();
-            return;
+            if let Ok(ecs) = serialization::world_from_file(level_path) {
+                self.ecs = ecs;
+                return;
+            }
         }
-        self.entity_mappings.player = components::spawn_object(&mut self.ecs, components::Player, Vector2i::new(15, 9));
-
+        components::spawn_object(&mut self.ecs, components::Player, Vector2i::new(15, 9));
         components::spawn_object(&mut self.ecs, components::Portal, Vector2i::new(15, 7));
-
-        // components::spawn_object(&mut self.ecs, components::Rock, Vector2i::new(10, 8));
     }
-
-    /// Replaces this world's entities with those from a JSON save.
-    pub fn load_from_json(&mut self, json: &str) -> Result<(), serialization::LoadError> {
-        self.install(serialization::world_from_json(json)?);
-        Ok(())
-    }
-
-    /// Reads `path` and replaces this world's entities with those from it.
-    pub fn load_from_file(&mut self, path: &str) -> Result<(), serialization::LoadError> {
-        self.install(serialization::world_from_file(path)?);
-        Ok(())
-    }
-
-    /// Installs a freshly deserialized ECS world, refreshing cached mappings.
-    fn install(&mut self, ecs: hecs::World) {
-        self.ecs = ecs;
-        self.entity_mappings.player = self.find_player();
-    }
-
-    fn find_player(&self) -> Entity {
-        self.ecs
-            .iter()
-            .find(|entity| entity.has::<components::Player>())
-            .map(|entity| entity.entity())
-            .unwrap_or(Entity::DANGLING)
-    }
-
     /// An owned copy of a loaded texture, for use by UI widgets.
     pub fn texture(&self, name: &str) -> Option<FBox<Texture>> {
         self.texture_atlas.get(name).map(|texture| texture.to_owned())
@@ -98,39 +62,6 @@ impl World {
     /// Converts a screen position to the grid cell under it.
     pub fn screen_to_tile(&self, screen_pos: Vector2f) -> Vector2i {
         Vector2i::new((screen_pos.x / CELL_WIDTH) as i32, (screen_pos.y / CELL_HEIGHT) as i32)
-    }
-
-    fn in_bounds(&self, tile: Vector2i) -> bool {
-        tile.x >= 0 && tile.y >= 0 && tile.x < GRID_COLS && tile.y < GRID_ROWS
-    }
-
-    /// The entity for `object` sitting on `tile`, if any.
-    pub fn object_entity_at(&self, object: &Object, tile: Vector2i) -> Option<Entity> {
-        for entity in object.get_instances(&self.ecs) {
-            if let Ok(position) = self.ecs.get::<&components::TilePosition>(entity)
-                && (*position).0 == tile
-            {
-                return Some(entity);
-            }
-        }
-        None
-    }
-
-    /// Spawns `object` on `tile`, or despawns an existing instance there.
-    ///
-    /// Returns `true` when an object was spawned and `false` when one was
-    /// removed (or the tile was outside the grid).
-    pub fn toggle_object_at(&mut self, object: &Object, tile: Vector2i) -> bool {
-        if !self.in_bounds(tile) {
-            return false;
-        }
-        if let Some(entity) = self.object_entity_at(object, tile) {
-            self.ecs.despawn(entity).unwrap();
-            false
-        } else {
-            self.spawn_object(object, tile);
-            true
-        }
     }
 
     /// Despawns every non-player object sitting on `tile`.
@@ -147,22 +78,39 @@ impl World {
 
         let mut removed = false;
         for entity in entities {
-            // The player is not an editor object, so leave it alone.
-            if self.ecs.get::<&components::Player>(entity).is_ok() {
-                continue;
-            }
             self.ecs.despawn(entity).unwrap();
             removed = true;
         }
         removed
     }
 
+    pub fn player_on_portal(&self) -> bool {
+        let player_pos = self.get_player_tile_pos();
+        let portal_positions: Vec<Vector2i> = self
+            .ecs
+            .query::<(&components::Portal, &TilePosition)>()
+            .iter()
+            .map(|(_, position)| position.0)
+            .collect();
+        portal_positions.contains(&player_pos)
+    }
+
     pub fn spawn_object(&mut self, object: &Object, tile_position: Vector2i) -> Entity {
         match object {
-            Object::Rock => components::spawn_object(&mut self.ecs, components::Rock, tile_position),
+            Object::Rock => components::spawn_object_with(
+                &mut self.ecs,
+                components::Rock,
+                tile_position,
+                (components::Impassable,),
+            ),
             Object::Lava => components::spawn_object(&mut self.ecs, components::Lava, tile_position),
             Object::Player => components::spawn_object(&mut self.ecs, components::Player, tile_position),
-            Object::Wall => components::spawn_object(&mut self.ecs, components::Wall, tile_position),
+            Object::Wall => components::spawn_object_with(
+                &mut self.ecs,
+                components::Wall,
+                tile_position,
+                (components::Impassable,),
+            ),
             Object::Portal => components::spawn_object(&mut self.ecs, components::Portal, tile_position),
         }
     }

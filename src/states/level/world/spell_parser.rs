@@ -1,9 +1,9 @@
 use std::{result::Result, str::FromStr};
 
 use hecs::{Entity, World};
+use sfml::system::Vector2i;
 
 use crate::states::level::world::components;
-
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Action(Action),
@@ -34,6 +34,17 @@ pub enum Dir {
     S,
     W,
     E,
+}
+
+impl Dir {
+    pub fn to_vec(&self) -> Vector2i {
+        match &self {
+            Dir::N => Vector2i::new(0, -1),
+            Dir::S => Vector2i::new(0, 1),
+            Dir::W => Vector2i::new(-1, 0),
+            Dir::E => Vector2i::new(1, 0),
+        }
+    }
 }
 
 impl Object {

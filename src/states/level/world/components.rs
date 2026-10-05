@@ -22,7 +22,7 @@ where
     let texture_name = type_name::<T>().rsplit("::").next().unwrap().to_lowercase();
 
     let entity = world.spawn((component, TextureString(texture_name), TilePosition(position)));
-    world.spawn_at(entity, bundle);
+    world.insert(entity, bundle);
     return entity;
 }
 
@@ -40,5 +40,5 @@ pub struct Rock;
 pub struct Lava;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TextureString(pub String);
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct TilePosition(pub Vector2i);
