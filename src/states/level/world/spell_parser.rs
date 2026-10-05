@@ -65,29 +65,6 @@ impl Object {
             _ => *self,
         }
     }
-
-    pub fn get_instances(&self, world: &World) -> Vec<Entity> {
-        match self {
-            Self::Rock => get_instances::<components::Rock>(world),
-            Self::Lava => get_instances::<components::Lava>(world),
-            Self::Player => get_instances::<components::Player>(world),
-            Self::Wall => get_instances::<components::Wall>(world),
-            Self::Portal => get_instances::<components::Portal>(world),
-        }
-    }
-
-    pub fn get_only_instance(&self, world: &World) -> Option<Entity> {
-        let instances = self.get_instances(world);
-        if instances.len() == 1 {
-            return Some(instances[0]);
-        }
-        return None;
-    }
-}
-
-fn get_instances<T: hecs::Component>(world: &World) -> Vec<Entity> {
-    let entities: Vec<Entity> = world.query::<(Entity, &T)>().iter().map(|(entity, _)| entity).collect();
-    return entities;
 }
 
 impl FromStr for Token {
@@ -105,14 +82,12 @@ impl FromStr for Token {
             "wall" => Ok(Token::Object(Object::Wall)),
 
             "pipe" => Ok(Token::GetFromPrev),
-            // "water" => Ok(Token::Water),
-            // "steam" => Ok(Token::Steam),
+
             "n" => Ok(Token::Dir(Dir::N)),
             "s" => Ok(Token::Dir(Dir::S)),
             "w" => Ok(Token::Dir(Dir::W)),
             "e" => Ok(Token::Dir(Dir::E)),
-            // "up" => Ok(Token::Up),
-            // "down" => Ok(Token::Down),
+
             _ => Err(()),
         }
     }

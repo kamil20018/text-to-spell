@@ -82,7 +82,7 @@ impl World {
 
                 match heat_target {
                     Token::Object(object) => {
-                        if let Some(entity) = object.get_only_instance(&self.ecs) {
+                        if let Some(entity) = self.get_only_object_instance(&object) {
                             return self.heat_object(entity, &object);
                         } else {
                             println!("heat: there are less or more than 0 instances in the world")
@@ -126,7 +126,7 @@ impl World {
                         println!("move: missing passed_object");
                     }
                 } else if let Token::Object(object) = move_target {
-                    if let Some(entity) = object.get_only_instance(&self.ecs) {
+                    if let Some(entity) = self.get_only_object_instance(&object) {
                         entity_to_move = Some(entity);
                         return_object = Some(Token::Object(object));
                     } else {

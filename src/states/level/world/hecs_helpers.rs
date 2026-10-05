@@ -59,6 +59,34 @@ impl World {
         }
     }
 
+    pub fn get_only_object_instance(&self, object: &Object) -> Option<Entity> {
+        let instances = self.get_object_instances(object);
+        if instances.len() == 1 {
+            return Some(instances[0]);
+        }
+        return None;
+    }
+
+    pub fn get_object_instances(&self, object: &Object) -> Vec<Entity> {
+        match object {
+            Object::Rock => self.get_instances_with::<components::Rock>(),
+            Object::Lava => self.get_instances_with::<components::Lava>(),
+            Object::Player => self.get_instances_with::<components::Player>(),
+            Object::Wall => self.get_instances_with::<components::Wall>(),
+            Object::Portal => self.get_instances_with::<components::Portal>(),
+        }
+    }
+
+    pub fn get_instances_with<T: hecs::Component>(&self) -> Vec<Entity> {
+        let entities: Vec<Entity> = self
+            .ecs
+            .query::<(Entity, &T)>()
+            .iter()
+            .map(|(entity, _)| entity)
+            .collect();
+        return entities;
+    }
+
     pub fn move_entity(&mut self, entity: &Entity, vec: Vector2i) {
         self.ecs.get::<&mut components::TilePosition>(*entity).unwrap().0 += vec;
     }
