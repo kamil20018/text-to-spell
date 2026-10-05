@@ -12,6 +12,7 @@ use sfml::{
 use crate::states::level::{constant, world::components::TilePosition};
 
 pub mod components;
+pub mod hecs_helpers;
 pub mod serialization;
 pub mod spell_caster;
 pub mod spell_parser;
@@ -51,37 +52,16 @@ impl World {
                 return;
             }
         }
-        components::spawn_object(&mut self.ecs, components::Player, Vector2i::new(15, 9));
-        components::spawn_object(&mut self.ecs, components::Portal, Vector2i::new(15, 7));
+        self.spawn_entity(components::Player, Vector2i::new(15, 9));
+        self.spawn_entity(components::Portal, Vector2i::new(15, 7));
     }
     /// An owned copy of a loaded texture, for use by UI widgets.
     pub fn texture(&self, name: &str) -> Option<FBox<Texture>> {
         self.texture_atlas.get(name).map(|texture| texture.to_owned())
     }
 
-    /// Converts a screen position to the grid cell under it.
     pub fn screen_to_tile(&self, screen_pos: Vector2f) -> Vector2i {
         Vector2i::new((screen_pos.x / CELL_WIDTH) as i32, (screen_pos.y / CELL_HEIGHT) as i32)
-    }
-
-    /// Despawns every non-player object sitting on `tile`.
-    ///
-    /// Returns `true` when at least one object was removed.
-    pub fn despawn_at(&mut self, tile: Vector2i) -> bool {
-        let entities: Vec<Entity> = self
-            .ecs
-            .query::<(Entity, &components::TilePosition)>()
-            .iter()
-            .filter(|(_, position)| position.0 == tile)
-            .map(|(entity, _)| entity)
-            .collect();
-
-        let mut removed = false;
-        for entity in entities {
-            self.ecs.despawn(entity).unwrap();
-            removed = true;
-        }
-        removed
     }
 
     pub fn player_on_portal(&self) -> bool {
@@ -93,26 +73,6 @@ impl World {
             .map(|(_, position)| position.0)
             .collect();
         portal_positions.contains(&player_pos)
-    }
-
-    pub fn spawn_object(&mut self, object: &Object, tile_position: Vector2i) -> Entity {
-        match object {
-            Object::Rock => components::spawn_object_with(
-                &mut self.ecs,
-                components::Rock,
-                tile_position,
-                (components::Impassable,),
-            ),
-            Object::Lava => components::spawn_object(&mut self.ecs, components::Lava, tile_position),
-            Object::Player => components::spawn_object(&mut self.ecs, components::Player, tile_position),
-            Object::Wall => components::spawn_object_with(
-                &mut self.ecs,
-                components::Wall,
-                tile_position,
-                (components::Impassable,),
-            ),
-            Object::Portal => components::spawn_object(&mut self.ecs, components::Portal, tile_position),
-        }
     }
 
     pub fn process_keystroke(&mut self, key: Key) {

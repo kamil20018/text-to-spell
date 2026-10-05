@@ -3,7 +3,7 @@ use sfml::system::Vector2i;
 
 use super::{
     World, components,
-    spell_parser::{self, Action, Dir, Object, Token},
+    spell_parser::{self, Action, Object, Token},
 };
 
 impl World {
@@ -157,10 +157,6 @@ impl World {
         let object = object.on_heat();
         let entity = self.spawn_object(&object.on_heat(), tile_position.0);
         Some((entity, Token::Object(object)))
-    }
-
-    pub fn move_entity(&mut self, entity: &Entity, vec: Vector2i) {
-        self.ecs.get::<&mut components::TilePosition>(*entity).unwrap().0 += vec;
     }
 
     pub fn get_player_tile_pos(&self) -> Vector2i {
